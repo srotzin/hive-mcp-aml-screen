@@ -1,0 +1,38 @@
+name: hive-mcp-aml-screen
+displayName: Hive AML Screen
+description: AML screening broker for the A2A network. Combines a daily-refreshed OFAC SDN list with on-chain heuristic flags and returns an observational risk score. Data only — Hive does not block, freeze, or settle.
+version: 1.0.0
+license: MIT
+homepage: https://github.com/srotzin/hive-mcp-aml-screen
+author:
+  name: Steve Rotzin
+  email: steve@thehiveryiq.com
+runtime: container
+build:
+  dockerfilePath: Dockerfile
+startCommand:
+  type: http
+  configSchema:
+    type: object
+    properties:
+      ENABLE:
+        type: string
+        default: "true"
+      WALLET_ADDRESS:
+        type: string
+        default: "0x15184bf50b3d3f52b60434f8942b7d52f2eb436e"
+      BASE_RPC_URL:
+        type: string
+        default: "https://mainnet.base.org"
+tools:
+  - name: aml_screen
+    description: Screen a single address against the OFAC SDN list and on-chain heuristic flags. Returns a 0-100 observational risk score and category flags. $0.03 per screening via x402. Cached 24h.
+  - name: aml_bulk_screen
+    description: Screen 10 or more addresses in a single call. $0.025 per address with a 10-address minimum. Cached 24h per address.
+  - name: aml_today
+    description: Return today's UTC counters — screenings, cache hits, OFAC list size and last refresh, revenue. Free.
+brand:
+  color: "#C08D23"
+  voice: stripe-docs
+inbound_only: true
+disclaimer: Hive does not block, freeze, or settle. This is observational AML data only. Customer is responsible for compliance decisions.

@@ -1,7 +1,7 @@
 {
   "name": "hive-mcp-aml-screen",
   "version": "1.0.0",
-  "description": "AML screening broker for the A2A network. Combines a daily-refreshed OFAC SDN list with on-chain heuristic flags and returns an observational risk score. Data only — Hive does not block, freeze, or settle.",
+  "description": "AML screening broker for the A2A network. Combines a daily-refreshed OFAC SDN list with on-chain heuristic flags and returns an observational risk score. Data only \u2014 Hive does not block, freeze, or settle.",
   "type": "module",
   "main": "server.js",
   "bin": {
@@ -40,7 +40,7 @@
     "url": "https://github.com/srotzin/hive-mcp-aml-screen"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",

@@ -874,6 +874,10 @@ setInterval(() => { try { stmt.pruneCache.run(Date.now()); } catch {} }, 60 * 60
 
 // ─── boot ───────────────────────────────────────────────────────────────────
 
+// ─── Schema constants (auto-injected to fix deploy) ─────
+const TOOLS = (typeof globalThis.__HIVE_TOOLS__ !== 'undefined') ? globalThis.__HIVE_TOOLS__ : [];
+
+
 // ─── Schema discoverability ────────────────────────────────────────────────
 const AGENT_CARD = {
   name: SERVICE,

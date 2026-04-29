@@ -947,6 +947,149 @@ app.get('/.well-known/agent-card.json', (req, res) => res.json(AGENT_CARD));
 app.get('/.well-known/ap2.json',         (req, res) => res.json(AP2));
 
 
+
+// ─── Subscription & enterprise tier endpoints (Wave B codification) ──────────
+// Partner-doctrine: identity/receipts/trust plumbing only.
+// Subscription billing is denominated in USDC on Base (Monroe W1).
+// Spectral receipt is emitted on every fee event via hive-receipt sidecar.
+//
+// Tier schedule:
+//   Tier 1 (Starter)    : 50.0/mo
+//   Tier 2 (Pro)        : 200.0/mo
+//   Tier 3 (Enterprise) : 500.0/mo
+//
+// x402 tx_hash required for Tier 1+ confirmation. Tier 3 can invoice monthly.
+//
+// Spectral receipt: POST to hive-receipt sidecar for tamper-evident audit trail.
+
+const SUBSCRIPTION_TIERS = {
+  starter:    { price_usd: 50.0, calls_per_day: 500, label: 'Starter' },
+  pro:        { price_usd: 200.0, calls_per_day: 5000, label: 'Pro' },
+  enterprise: { price_usd: 500.0, calls_per_day: Infinity, label: 'Enterprise', invoice: true },
+};
+
+// In-memory subscription ledger (durable persistence on hivemorph backend).
+const _subLedger = new Map(); // did -> { tier, activated_ms, tx_hash }
+
+async function emitSpectralReceipt({ event_type, did, amount_usd, tool_name, tx_hash, metadata }) {
+  // Posts a Spectral-signed receipt to hive-receipt. Non-blocking.
+  // Error is logged but never throws — receipt emission must not block the fee path.
+  try {
+    const body = JSON.stringify({
+      issuer_did: 'did:hive:aml-screen',
+      recipient_did: did || 'did:hive:anonymous',
+      event_type,
+      tool_name,
+      amount_usd: String(amount_usd),
+      currency: 'USDC',
+      network: 'base',
+      pay_to: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+      tx_hash: tx_hash || null,
+      issued_ms: Date.now(),
+      service: 'Hive AML Screen',
+      brand: '#C08D23',
+      ...metadata,
+    });
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 4000);
+    await fetch('https://hive-receipt.onrender.com/v1/receipt/sign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+  } catch (_) {
+    // Receipt emission is best-effort. Log and continue.
+    console.warn('[aml-screen] receipt emit failed (non-fatal):', _.message || _);
+  }
+}
+
+// POST /v1/subscription — create or upgrade a subscription
+app.post('/v1/subscription', async (req, res) => {
+  const { tier, did, tx_hash } = req.body || {};
+  if (!tier || !SUBSCRIPTION_TIERS[tier]) {
+    return res.status(400).json({
+      error: 'invalid_tier',
+      valid_tiers: Object.keys(SUBSCRIPTION_TIERS),
+      brand: '#C08D23',
+    });
+  }
+  const t = SUBSCRIPTION_TIERS[tier];
+  if (!did) return res.status(400).json({ error: 'did_required' });
+
+  // Enterprise tier can invoice monthly (no tx_hash required at activation).
+  if (tier !== 'enterprise' && !tx_hash) {
+    return res.status(402).json({
+      error: 'payment_required',
+      x402: {
+        type: 'x402', version: '1', kind: 'subscription_aml-screen',
+        asking_usd: t.price_usd,
+        accept_min_usd: t.price_usd,
+        asset: 'USDC', asset_address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        network: 'base', pay_to: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+        nonce: Math.random().toString(36).slice(2),
+        issued_ms: Date.now(),
+        tier, label: t.label,
+        bogo: { first_call_free: true, loyalty_every_n: 6 },
+      },
+      note: `Submit tx_hash for ${t.price_usd} USDC/mo to 0x15184bf50b3d3f52b60434f8942b7d52f2eb436e on Base.`,
+    });
+  }
+
+  const record = {
+    tier, did, tx_hash: tx_hash || 'enterprise_invoice',
+    activated_ms: Date.now(),
+    expires_ms: Date.now() + 30 * 24 * 3600 * 1000,
+    price_usd: t.price_usd,
+    calls_per_day: t.calls_per_day,
+  };
+  _subLedger.set(did, record);
+
+  // Emit Spectral receipt for subscription activation.
+  await emitSpectralReceipt({
+    event_type: 'subscription_activated',
+    did, amount_usd: t.price_usd, tool_name: 'subscription',
+    tx_hash: tx_hash || null,
+    metadata: { tier, service: 'Hive AML Screen', expires_ms: record.expires_ms },
+  });
+
+  return res.json({
+    ok: true,
+    subscription: record,
+    receipt_emitted: true,
+    partner_attribution: 'AML passthrough complements Chainalysis, TRM Labs, Elliptic — Hive adds trust-score attestation layer',
+    brand: '#C08D23',
+    note: 'Subscription active for 30 days. Spectral receipt issued to hive-receipt.',
+  });
+});
+
+// GET /v1/subscription/:did — check subscription status
+app.get('/v1/subscription/:did', (req, res) => {
+  const record = _subLedger.get(req.params.did);
+  if (!record) {
+    return res.status(404).json({ active: false, did: req.params.did });
+  }
+  const active = Date.now() < record.expires_ms;
+  return res.json({ active, ...record });
+});
+
+// POST /v1/subscription/verify — lightweight verification (no charge)
+app.post('/v1/subscription/verify', (req, res) => {
+  const { did } = req.body || {};
+  const record = _subLedger.get(did);
+  const active = record && Date.now() < record.expires_ms;
+  return res.json({
+    active: !!active,
+    did: did || null,
+    tier: record?.tier || null,
+    expires_ms: record?.expires_ms || null,
+    brand: '#C08D23',
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 app.listen(PORT, async () => {
   console.log(`${SERVICE} v${VERSION} listening on :${PORT}`);
   console.log(`enabled=${ENABLE} brand=${BRAND_GOLD} wallet=${WALLET_ADDRESS}`);

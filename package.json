@@ -40,10 +40,10 @@
     "url": "https://github.com/srotzin/hive-mcp-aml-screen"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": "22.x"
   },
   "dependencies": {
-    "better-sqlite3": "^11.3.0",
+    "better-sqlite3": "^12.9.0",
     "csv-parse": "^5.5.6",
     "ethers": "^6.13.2",
     "express": "^4.19.2"

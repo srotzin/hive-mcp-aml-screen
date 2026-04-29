@@ -418,6 +418,13 @@ function gc402() {
 }
 setInterval(gc402, 60_000).unref?.();
 
+const BOGO = {
+  first_call_free: true,
+  loyalty_threshold: 6,
+  pitch: "Pay this once, your 6th paid call is on the house. New here? Add header 'x-hive-did' to claim your first call free.",
+  claim_with: 'x-hive-did header',
+};
+
 function quoteEnvelope({ amount_usd, product, addresses }) {
   const nonce = randomUUID();
   const expires_at = Math.floor((Date.now() + NONCE_TTL_MS) / 1000);
@@ -437,6 +444,7 @@ function quoteEnvelope({ amount_usd, product, addresses }) {
       product,
     },
     disclaimer: DISCLAIMER,
+    bogo: BOGO,
   };
 }
 

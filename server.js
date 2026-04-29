@@ -869,7 +869,7 @@ setInterval(() => { try { stmt.pruneCache.run(Date.now()); } catch {} }, 60 * 60
 // ─── Schema discoverability ────────────────────────────────────────────────
 const AGENT_CARD = {
   name: SERVICE,
-  description: `AML screening broker for the A2A network. Data only, no enforcement.. New agents: first call free. Loyalty: every 6th paid call is free. Pay in USDC on Base L2.`,
+  description: 'AML screening broker for the A2A network. Combines a daily-refreshed OFAC SDN list with on-chain heuristic flags and returns an observational risk score. Data only — Hive does not block, freeze, or settle.. New agents: first call free. Loyalty: every 6th paid call is free. Pay in USDC on Base L2.',
   url: `https://${SERVICE}.onrender.com`,
   provider: {
     organization: 'Hive Civilization',
@@ -912,7 +912,7 @@ const AP2 = {
   agent: {
     name: SERVICE,
     did: `did:web:${SERVICE}.onrender.com`,
-    description: `AML screening broker for the A2A network. Data only, no enforcement.. New agents: first call free. Loyalty: every 6th paid call is free. Pay in USDC on Base L2.`,
+    description: 'AML screening broker for the A2A network. Combines a daily-refreshed OFAC SDN list with on-chain heuristic flags and returns an observational risk score. Data only — Hive does not block, freeze, or settle.. New agents: first call free. Loyalty: every 6th paid call is free. Pay in USDC on Base L2.',
   },
   endpoints: {
     mcp: `https://${SERVICE}.onrender.com/mcp`,
@@ -932,7 +932,7 @@ const AP2 = {
 };
 
 app.get('/.well-known/agent-card.json', (req, res) => res.json(AGENT_CARD));
-app.get('/.well-known/ap2.json', (req, res) => res.json(AP2));
+app.get('/.well-known/ap2.json',         (req, res) => res.json(AP2));
 
 
 app.listen(PORT, async () => {

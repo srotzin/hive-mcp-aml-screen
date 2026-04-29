@@ -866,168 +866,73 @@ setInterval(() => { try { stmt.pruneCache.run(Date.now()); } catch {} }, 60 * 60
 
 // ─── boot ───────────────────────────────────────────────────────────────────
 
-// ─── Schema discoverability routes ────────────────────────────────────────
-app.get('/.well-known/agent-card.json', (req, res) => {
-  res.json({
-  "name": "hive-mcp-aml-screen",
-  "description": "AML screening broker for the A2A network. Combines a daily-refreshed OFAC SDN list with on-chain heuristic flags and returns an observational risk score. Data only \u2014 Hive does not block, freeze, or settle.",
-  "url": "https://hive-mcp-aml-screen.onrender.com",
-  "provider": {
-    "organization": "Hive Civilization",
-    "url": "https://www.thehiveryiq.com",
-    "contact": "steve@thehiveryiq.com"
+// ─── Schema discoverability ────────────────────────────────────────────────
+const AGENT_CARD = {
+  name: SERVICE,
+  description: `AML screening broker for the A2A network. Data only, no enforcement.. New agents: first call free. Loyalty: every 6th paid call is free. Pay in USDC on Base L2.`,
+  url: `https://${SERVICE}.onrender.com`,
+  provider: {
+    organization: 'Hive Civilization',
+    url: 'https://www.thehiveryiq.com',
+    contact: 'steve@thehiveryiq.com',
   },
-  "version": "1.0.0",
-  "capabilities": {
-    "streaming": false,
-    "pushNotifications": false,
-    "stateTransitionHistory": false
+  version: VERSION,
+  capabilities: {
+    streaming: false,
+    pushNotifications: false,
+    stateTransitionHistory: false,
   },
-  "authentication": {
-    "schemes": [
-      "x402"
-    ],
-    "credentials": {
-      "type": "x402",
-      "asset": "USDC",
-      "network": "base",
-      "asset_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "recipient": "0x15184bf50b3d3f52b60434f8942b7d52f2eb436e"
-    }
+  authentication: {
+    schemes: ['x402'],
+    credentials: {
+      type: 'x402',
+      asset: 'USDC',
+      network: 'base',
+      asset_address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      recipient: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+    },
   },
-  "defaultInputModes": [
-    "application/json"
-  ],
-  "defaultOutputModes": [
-    "application/json"
-  ],
-  "skills": []
-});
-});
+  defaultInputModes: ['application/json'],
+  defaultOutputModes: ['application/json'],
+  skills: TOOLS.map(t => ({ name: t.name, description: t.description })),
+  extensions: {
+    hive_pricing: {
+      currency: 'USDC',
+      network: 'base',
+      model: 'per_call',
+      first_call_free: true,
+      loyalty_threshold: 6,
+      loyalty_message: 'Every 6th paid call is free',
+    },
+  },
+};
 
-app.get('/.well-known/ap2.json', (req, res) => {
-  res.json({
-  "ap2_version": "1",
-  "agent": {
-    "name": "hive-mcp-aml-screen",
-    "did": "did:web:hive-mcp-aml-screen.onrender.com",
-    "description": "AML screening broker for the A2A network. Combines a daily-refreshed OFAC SDN list with on-chain heuristic flags and returns an observational risk score. Data only \u2014 Hive does not block, freeze, or settle."
+const AP2 = {
+  ap2_version: '1',
+  agent: {
+    name: SERVICE,
+    did: `did:web:${SERVICE}.onrender.com`,
+    description: `AML screening broker for the A2A network. Data only, no enforcement.. New agents: first call free. Loyalty: every 6th paid call is free. Pay in USDC on Base L2.`,
   },
-  "endpoints": {
-    "mcp": "https://hive-mcp-aml-screen.onrender.com/mcp",
-    "agent_card": "https://hive-mcp-aml-screen.onrender.com/.well-known/agent-card.json"
+  endpoints: {
+    mcp: `https://${SERVICE}.onrender.com/mcp`,
+    agent_card: `https://${SERVICE}.onrender.com/.well-known/agent-card.json`,
   },
-  "payments": {
-    "schemes": [
-      "x402"
-    ],
-    "primary": {
-      "scheme": "x402",
-      "network": "base",
-      "asset": "USDC",
-      "asset_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "recipient": "0x15184bf50b3d3f52b60434f8942b7d52f2eb436e"
-    }
+  payments: {
+    schemes: ['x402'],
+    primary: {
+      scheme: 'x402',
+      network: 'base',
+      asset: 'USDC',
+      asset_address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      recipient: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+    },
   },
-  "brand": {
-    "color": "#C08D23",
-    "name": "Hive Civilization"
-  }
-});
-});
+  brand: { color: '#C08D23', name: 'Hive Civilization' },
+};
 
-app.get('/openapi.json', (req, res) => {
-  res.json({
-  "openapi": "3.0.3",
-  "info": {
-    "title": "hive-mcp-aml-screen",
-    "version": "1.0.0",
-    "description": "AML screening broker for the A2A network. Combines a daily-refreshed OFAC SDN list with on-chain heuristic flags and returns an observational risk score. Data only \u2014 Hive does not block, freeze, or settle.",
-    "contact": {
-      "email": "steve@thehiveryiq.com"
-    },
-    "x-brand-color": "#C08D23",
-    "x-organization": "Hive Civilization"
-  },
-  "servers": [
-    {
-      "url": "https://hive-mcp-aml-screen.onrender.com"
-    }
-  ],
-  "paths": {
-    "/": {
-      "get": {
-        "summary": "GET /",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "summary": "GET /health",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/v1/x402/submit": {
-      "post": {
-        "summary": "POST /v1/x402/submit",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/v1/aml/screen": {
-      "post": {
-        "summary": "POST /v1/aml/screen",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/v1/aml/bulk": {
-      "post": {
-        "summary": "POST /v1/aml/bulk",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/v1/aml/today": {
-      "get": {
-        "summary": "GET /v1/aml/today",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/mcp": {
-      "post": {
-        "summary": "POST /mcp",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    }
-  }
-});
-});
+app.get('/.well-known/agent-card.json', (req, res) => res.json(AGENT_CARD));
+app.get('/.well-known/ap2.json', (req, res) => res.json(AP2));
 
 
 app.listen(PORT, async () => {

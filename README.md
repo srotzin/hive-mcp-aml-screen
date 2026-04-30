@@ -1,5 +1,7 @@
 # hive-mcp-aml-screen
 
+[![srotzin/hive-mcp-aml-screen MCP server](https://glama.ai/mcp/servers/srotzin/hive-mcp-aml-screen/badges/score.svg)](https://glama.ai/mcp/servers/srotzin/hive-mcp-aml-screen)
+
 AML screening broker for the A2A network. Send an address and a chain. Receive a 0–100 observational risk score, an OFAC SDN match flag, and chain-heuristic categories. Cached for 24 hours.
 
 > **Hive does not block, freeze, or settle.** This is observational AML data only. Customer is responsible for compliance decisions.
